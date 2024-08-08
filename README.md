@@ -49,24 +49,24 @@ hoje a ferramenta busca uma posição e loga isso no terminal.
 **Desafio consiste**
 
 **1. Leitura de Arquivo CNAB:**
-   - Permitir que o usuário forneça o caminho do arquivo CNAB pela linha de comando (CLI).
-   - O campo do arquivo é opcional; caso não seja especificado, o programa deve informar ao usuário que será utilizado um arquivo padrão.
+   - Permitir que o usuário forneça o caminho do arquivo CNAB pela linha de comando (CLI). ok
+   - O campo do arquivo é opcional; caso não seja especificado, o programa deve informar ao usuário que será utilizado um arquivo padrão. ok
 
 **2. Busca por Segmentos:**
-   - Implementar a capacidade de buscar por segmentos específicos no arquivo CNAB.
-   - Exibir o nome completo das empresas associadas ao segmento informado.
+   - Implementar a capacidade de buscar por segmentos específicos no arquivo CNAB. ok
+   - Exibir o nome completo das empresas associadas ao segmento informado. ok
 
 **3. Pesquisa por Nome da Empresa:**
-   - Desenvolver uma funcionalidade que permita a busca por nome de empresa no arquivo CNAB.
-   - Mostrar o nome completo da empresa, não apenas o fragmento usado na pesquisa.
-   - Indicar a posição exata onde a empresa foi encontrada e informar a qual segmento ela pertence.
+   - Desenvolver uma funcionalidade que permita a busca por nome de empresa no arquivo CNAB. ok
+   - Mostrar o nome completo da empresa, não apenas o fragmento usado na pesquisa. ok
+   - Indicar a posição exata onde a empresa foi encontrada e informar a qual segmento ela pertence. ok
 
 **4. Exportação para JSON:**
    - Criar um novo arquivo em formato JSON contendo as informações essenciais:
-      - precisa ser uma nova opção no CLI
-      - Nome da empresa.
-      - Endereço completo (incluindo avenida, rua e CEP).
-      - Posições no arquivo CNAB onde as informações foram localizadas.
+      - precisa ser uma nova opção no CLI ok
+      - Nome da empresa. ok 
+      - Endereço completo (incluindo avenida, rua e CEP). ok 
+      - Posições no arquivo CNAB onde as informações foram localizadas. ok
 
 **Bonus** O candidato tem total liberdade de mudar a estrutura atual desse projeto, a ideía é ver a criatividade de resolver esse problema.
 

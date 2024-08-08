@@ -1,73 +1,100 @@
 'use strict';
-import path from 'path'
-import { readFile } from 'fs/promises'
-import { fileURLToPath } from 'url';
 
-import yargs from 'yargs'
-import chalk from 'chalk'
+import path from 'path';
+import { readFile, writeFile } from 'fs/promises';
+import { fileURLToPath } from 'url';
+import yargs from 'yargs';
+import chalk from 'chalk';
 
 const optionsYargs = yargs(process.argv.slice(2))
   .usage('Uso: $0 [options]')
-  .option("f", { alias: "from", describe: "posição inicial de pesquisa da linha do Cnab", type: "number", demandOption: true })
-  .option("t", { alias: "to", describe: "posição final de pesquisa da linha do Cnab", type: "number", demandOption: true })
-  .option("s", { alias: "segmento", describe: "tipo de segmento", type: "string", demandOption: true })
+  .option("f", { alias: "from", describe: "posição inicial de pesquisa da linha do Cnab", type: "number" })
+  .option("t", { alias: "to", describe: "posição final de pesquisa da linha do Cnab", type: "number" })
+  .option("s", { alias: "segmento", describe: "tipo de segmento", type: "string" })
+  .option("p", { alias: "path", describe: "caminho para o arquivo CNAB", type: "string", default: 'cnabExample.rem' })
+  .option("n", { alias: "nome", describe: "nome da empresa para pesquisar", type: "string" })
+  .option("j", { alias: "json", describe: "exportar resultado para JSON", type: "boolean" })
   .example('$0 -f 21 -t 34 -s p', 'lista a linha e campo que from e to do cnab')
   .argv;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const file = path.resolve(`${__dirname}/cnabExample.rem`)
+const filePath = optionsYargs.path ? path.resolve(optionsYargs.path) : path.resolve(`${__dirname}/cnabExample.rem`);
 
-const { from, to, segmento } = optionsYargs
+const { from, to, segmento, nome, json } = optionsYargs;
 
-const sliceArrayPosition = (arr, ...positions) => [...arr].slice(...positions)
+const extractInfoFromLine = (line, from, to) => {
+  return {
+    segment: line[13],
+    info: line.substring(from - 1, to),
+    line: line
+  };
+};
 
-const messageLog = (segmento, segmentoType, from, to) => `
------ Cnab linha ${segmentoType} -----
+const searchSegment = (cnabArray, segmento, from, to) => {
+  const results = cnabArray
+    .filter(line => line[13].toLowerCase() === segmento.toLowerCase())
+    .map(line => extractInfoFromLine(line, from, to));
+  return results;
+};
 
-posição from: ${chalk.inverse.bgBlack(from)}
+const searchByName = (cnabArray, nome) => {
+  const results = cnabArray
+    .filter(line => line.includes(nome.toUpperCase()))
+    .map(line => ({
+      nome: nome.toUpperCase(),
+      endereco: line.substring(43, 73).trim(),
+      cep: line.substring(73, 81).trim(),
+      cidade: line.substring(81, 96).trim(),
+      estado: line.substring(96, 98).trim(),
+      linha: line
+    }));
+  console.log(results);
+  return results;
+};
 
-posição to: ${chalk.inverse.bgBlack(to)}
+const logSearchResults = (results) => {
+  results.forEach(result => {
+    console.log(chalk.blue(`Nome da Empresa: ${result.nome}`));
+    console.log(chalk.green(`Endereço: ${result.endereco}, CEP: ${result.cep}, Cidade: ${result.cidade}, Estado: ${result.estado}`));
+    console.log(chalk.yellow(`Linha completa: ${result.linha}`));
+    console.log('-'.repeat(50));
+  });
+};
 
-item isolado: ${chalk.inverse.bgBlack(segmento.substring(from - 1, to))}
+const exportToJson = async (results, fileName = 'cnab_output.json') => {
+  const jsonContent = JSON.stringify(results, null, 2);
+  await writeFile(path.resolve(__dirname, fileName), jsonContent);
+  console.log(chalk.green(`Resultados exportados para ${fileName}`));
+};
 
-item dentro da linha P: 
-  ${segmento.substring(0, from)}${chalk.inverse.bgBlack(segmento.substring(from - 1, to))}${segmento.substring(to)}
+const processCnabFile = async () => {
+  console.time('Leitura Async');
+  try {
+    const fileContent = await readFile(filePath, 'utf8');
+    const cnabArray = fileContent.split('\n').filter(line => line.trim());
 
------ FIM ------
-`
-
-const log = console.log
-
-console.time('leitura Async')
-
-readFile(file, 'utf8')
-  .then(file => {
-    const cnabArray = file.split('\n')
-
-    const cnabHeader = sliceArrayPosition(cnabArray, 0, 2)
-
-    const [cnabBodySegmentoP, cnabBodySegmentoQ, cnabBodySegmentoR] = sliceArrayPosition(cnabArray, 2, -2)
-
-    const cnabTail = sliceArrayPosition(cnabArray, -2)
-
-    if (segmento === 'p') {
-      log(messageLog(cnabBodySegmentoP, 'P', from, to))
-      return
+    if (segmento) {
+      const segmentResults = searchSegment(cnabArray, segmento, from, to);
+      segmentResults.forEach(result => {
+        console.log(`Segmento: ${result.segment}`);
+        console.log(`Info: ${result.info}`);
+        console.log(`Linha: ${result.line}`);
+        console.log('-'.repeat(50));
+      });
     }
 
-    if (segmento === 'q') {
-      log(messageLog(cnabBodySegmentoQ, 'Q', from, to))
-      return
+    if (nome) {
+      const nameResults = searchByName(cnabArray, nome);
+      logSearchResults(nameResults);
+      if (json) {
+        await exportToJson(nameResults);
+      }
     }
+  } catch (error) {
+    console.error("Erro ao processar o arquivo:", error);
+  }
+  console.timeEnd('Leitura Async');
+};
 
-    if (segmento === 'r') {
-      log(messageLog(cnabBodySegmentoR, 'R', from, to))
-      return
-    }
-
-  })
-  .catch(error => {
-    console.log("🚀 ~ file: cnabRows.js ~ line 76 ~ error", error)
-  })
-console.timeEnd('leitura Async')
+processCnabFile();
